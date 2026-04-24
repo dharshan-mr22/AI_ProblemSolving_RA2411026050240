@@ -37,6 +37,14 @@ This project implements an AI-based Tic-Tac-Toe game where a human plays against
 
 (https://github.com/dharshan-mr22/AI_ProblemSolving_RA2411026050240)
 
+## Performance Comparison
+
+- Minimax explores all possible game states, so it is slower.
+- Alpha-Beta Pruning reduces the number of nodes explored by eliminating unnecessary branches, making it faster.
+- The comparison is based on:
+  - Execution time (in milliseconds)
+  - Number of nodes explored
+
 ## Website Link
 
 (https://dharshan-mr22.github.io/AI_ProblemSolving_RA2411026050240/TicTacToe_AI/)
