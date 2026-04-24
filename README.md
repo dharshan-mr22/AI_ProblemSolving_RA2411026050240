@@ -39,5 +39,5 @@ This project implements an AI-based Tic-Tac-Toe game where a human plays against
 
 ## Website Link
 
-(To be added after GitHub Pages setup)
+(https://dharshan-mr22.github.io/AI_ProblemSolving_RA2411026050240/TicTacToe_AI/)
 
