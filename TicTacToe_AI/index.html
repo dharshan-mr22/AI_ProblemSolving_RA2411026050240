@@ -1,0 +1,214 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans)}
+#app{padding:1.5rem 1rem;max-width:520px;margin:0 auto}
+h1{font-size:20px;font-weight:500;color:var(--color-text-primary);margin-bottom:4px;text-align:center}
+.subtitle{font-size:13px;color:var(--color-text-secondary);text-align:center;margin-bottom:1.5rem}
+.algo-bar{display:flex;align-items:center;gap:8px;margin-bottom:1rem;background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:10px 14px}
+.algo-label{font-size:13px;color:var(--color-text-secondary);flex:1}
+.algo-badge{font-size:12px;font-weight:500;padding:3px 10px;border-radius:var(--border-radius-md);background:#E6F1FB;color:#0C447C}
+#toggle-btn{font-size:12px;padding:5px 12px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:transparent;color:var(--color-text-primary);cursor:pointer}
+#toggle-btn:hover{background:var(--color-background-secondary)}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem}
+.stat-card{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px 14px}
+.stat-label{font-size:12px;color:var(--color-text-secondary);margin-bottom:4px}
+.stat-value{font-size:20px;font-weight:500;color:var(--color-text-primary)}
+.board-wrap{display:flex;justify-content:center;margin-bottom:1rem}
+.board{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:270px}
+.cell{width:82px;height:82px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);background:var(--color-background-primary);cursor:pointer;font-size:32px;font-weight:500;display:flex;align-items:center;justify-content:center;transition:background 0.15s;color:var(--color-text-primary)}
+.cell:hover:not(.taken){background:var(--color-background-secondary)}
+.cell.x{color:#185FA5}
+.cell.o{color:#A32D2D}
+.cell.win{background:#EAF3DE;border-color:#639922}
+.cell.win.x{color:#185FA5}
+.cell.win.o{color:#A32D2D}
+.status-bar{text-align:center;font-size:15px;font-weight:500;color:var(--color-text-primary);min-height:24px;margin-bottom:1rem}
+.status-bar.result{color:#3B6D11}
+.status-bar.loss{color:#A32D2D}
+.status-bar.draw{color:#5F5E5A}
+#restart-btn{display:block;width:100%;padding:10px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:transparent;color:var(--color-text-primary);font-size:14px;cursor:pointer}
+#restart-btn:hover{background:var(--color-background-secondary)}
+.score-row{display:flex;justify-content:center;gap:24px;margin-bottom:1rem}
+.score-item{text-align:center}
+.score-item .sc-label{font-size:12px;color:var(--color-text-secondary)}
+.score-item .sc-val{font-size:18px;font-weight:500;color:var(--color-text-primary)}
+</style>
+
+<div id="app">
+  <h2 class="sr-only">Tic-Tac-Toe AI — play against Minimax or Alpha-Beta Pruning</h2>
+  <h1>Tic-Tac-Toe AI</h1>
+  <p class="subtitle">You are X — AI is O</p>
+
+  <div class="algo-bar">
+    <span class="algo-label">Algorithm:</span>
+    <span class="algo-badge" id="algo-badge">Minimax</span>
+    <button id="toggle-btn" onclick="toggleAlgo()">Switch to Alpha-Beta</button>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Nodes explored</div>
+      <div class="stat-value" id="nodes-val">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">AI decision time</div>
+      <div class="stat-value" id="time-val">—</div>
+    </div>
+  </div>
+
+  <div class="score-row">
+    <div class="score-item"><div class="sc-label">You (X)</div><div class="sc-val" id="score-x">0</div></div>
+    <div class="score-item"><div class="sc-label">Draws</div><div class="sc-val" id="score-d">0</div></div>
+    <div class="score-item"><div class="sc-label">AI (O)</div><div class="sc-val" id="score-o">0</div></div>
+  </div>
+
+  <div class="board-wrap">
+    <div class="board" id="board"></div>
+  </div>
+
+  <div class="status-bar" id="status">Your turn — place X</div>
+  <button id="restart-btn" onclick="restart()">Restart Game</button>
+</div>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────
+let board = Array(9).fill(null);   // null | 'X' | 'O'
+let gameOver = false;
+let useAlphaBeta = false;
+let scores = {X:0, O:0, D:0};
+let nodesExplored = 0;
+
+// ── Win combos ───────────────────────────────────────────────────────
+const WINS = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+
+function checkWinner(b) {
+  for (const [a,c,d] of WINS)
+    if (b[a] && b[a]===b[c] && b[a]===b[d]) return {player:b[a], line:[a,c,d]};
+  return null;
+}
+function isFull(b){ return b.every(c=>c!==null); }
+
+// ── Minimax ──────────────────────────────────────────────────────────
+function minimax(b, isMax) {
+  nodesExplored++;
+  const w = checkWinner(b);
+  if (w) return w.player==='O' ? 10 : -10;
+  if (isFull(b)) return 0;
+  let best = isMax ? -Infinity : Infinity;
+  for (let i=0;i<9;i++) {
+    if (!b[i]) {
+      b[i] = isMax?'O':'X';
+      const score = minimax(b, !isMax);
+      b[i] = null;
+      best = isMax ? Math.max(best,score) : Math.min(best,score);
+    }
+  }
+  return best;
+}
+
+// ── Alpha-Beta Pruning ───────────────────────────────────────────────
+function alphaBeta(b, isMax, alpha, beta) {
+  nodesExplored++;
+  const w = checkWinner(b);
+  if (w) return w.player==='O' ? 10 : -10;
+  if (isFull(b)) return 0;
+  let best = isMax ? -Infinity : Infinity;
+  for (let i=0;i<9;i++) {
+    if (!b[i]) {
+      b[i] = isMax?'O':'X';
+      const score = alphaBeta(b, !isMax, alpha, beta);
+      b[i] = null;
+      if (isMax) { best=Math.max(best,score); alpha=Math.max(alpha,best); }
+      else       { best=Math.min(best,score); beta=Math.min(beta,best);  }
+      if (beta<=alpha) break; // prune
+    }
+  }
+  return best;
+}
+
+// ── AI move ─────────────────────────────────────────────────────────
+function bestMove() {
+  nodesExplored = 0;
+  const t0 = performance.now();
+  let bestVal = -Infinity, move = -1;
+  for (let i=0;i<9;i++) {
+    if (!board[i]) {
+      board[i]='O';
+      const v = useAlphaBeta
+        ? alphaBeta(board, false, -Infinity, Infinity)
+        : minimax(board, false);
+      board[i]=null;
+      if (v > bestVal) { bestVal=v; move=i; }
+    }
+  }
+  const t1 = performance.now();
+  document.getElementById('nodes-val').textContent = nodesExplored.toLocaleString();
+  document.getElementById('time-val').textContent  = (t1-t0).toFixed(2)+'ms';
+  return move;
+}
+
+// ── Rendering ────────────────────────────────────────────────────────
+function render(winLine=[]) {
+  const b = document.getElementById('board');
+  b.innerHTML='';
+  board.forEach((cell,i)=>{
+    const div=document.createElement('div');
+    div.className='cell'+(cell?' taken':'')+(cell?' '+cell.toLowerCase():'')+(winLine.includes(i)?' win':'');
+    div.textContent=cell||'';
+    if (!cell && !gameOver) div.onclick=()=>humanMove(i);
+    b.appendChild(div);
+  });
+  document.getElementById('score-x').textContent=scores.X;
+  document.getElementById('score-o').textContent=scores.O;
+  document.getElementById('score-d').textContent=scores.D;
+}
+
+function setStatus(msg, cls='') {
+  const el=document.getElementById('status');
+  el.textContent=msg;
+  el.className='status-bar'+(cls?' '+cls:'');
+}
+
+// ── Game flow ────────────────────────────────────────────────────────
+function humanMove(i) {
+  if (gameOver || board[i]) return;
+  board[i]='X';
+  const w=checkWinner(board);
+  if (w) { render(w.line); setStatus('You win!','result'); scores.X++; gameOver=true; return; }
+  if (isFull(board)) { render(); setStatus("It's a draw!",'draw'); scores.D++; gameOver=true; return; }
+  setStatus('AI is thinking…');
+  render();
+  // Let UI update before blocking computation
+  setTimeout(()=>{
+    const m=bestMove();
+    board[m]='O';
+    const w2=checkWinner(board);
+    if (w2) { render(w2.line); setStatus('AI wins!','loss'); scores.O++; gameOver=true; return; }
+    if (isFull(board)) { render(); setStatus("It's a draw!",'draw'); scores.D++; gameOver=true; return; }
+    render();
+    setStatus('Your turn — place X');
+  },30);
+}
+
+function restart() {
+  board=Array(9).fill(null);
+  gameOver=false;
+  document.getElementById('nodes-val').textContent='—';
+  document.getElementById('time-val').textContent='—';
+  render();
+  setStatus('Your turn — place X');
+}
+
+function toggleAlgo() {
+  useAlphaBeta=!useAlphaBeta;
+  const badge=document.getElementById('algo-badge');
+  const btn=document.getElementById('toggle-btn');
+  badge.textContent=useAlphaBeta?'Alpha-Beta Pruning':'Minimax';
+  btn.textContent=useAlphaBeta?'Switch to Minimax':'Switch to Alpha-Beta';
+  restart();
+}
+
+// ── Init ─────────────────────────────────────────────────────────────
+render();
+</script>
