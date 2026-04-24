@@ -37,6 +37,10 @@ This project implements an AI-based Tic-Tac-Toe game where a human plays against
 
 (https://github.com/dharshan-mr22/AI_ProblemSolving_RA2411026050240)
 
+## Website Link
+
+(https://dharshan-mr22.github.io/AI_ProblemSolving_RA2411026050240/TicTacToe_AI/)
+
 ## Performance Comparison
 
 - Minimax explores all possible game states, so it is slower.
@@ -44,8 +48,4 @@ This project implements an AI-based Tic-Tac-Toe game where a human plays against
 - The comparison is based on:
   - Execution time (in milliseconds)
   - Number of nodes explored
-
-## Website Link
-
-(https://dharshan-mr22.github.io/AI_ProblemSolving_RA2411026050240/TicTacToe_AI/)
 
